@@ -1,20 +1,20 @@
 import os
 import io
+import uuid
 from typing import overload
 from types import TracebackType
 from urllib.parse import urljoin
 
 import httpx
 
-from .base import BaseStorageClient
 
-
-class IPFSStorageClient(BaseStorageClient):
+class SpfsStorageClient:
 
     def __init__(
         self,
         rpc_url: str = os.getenv(
-            "IPFS_RPC_URL", "http://127.0.0.1:5001"
+            "SPFS_RPC_URL",
+            "https://sds-gateway-uswest.thestratos.org/spfs/<access_token>",
         ),
         timeout: int | None = None,
     ):
@@ -70,21 +70,25 @@ class IPFSStorageClient(BaseStorageClient):
 
     @overload
     async def aput(
-        self, key: str, value: bytes
+        self, value: bytes, *, file_name: str | None = None
     ) -> str: ...  # pragma: no cover
 
     @overload
     async def aput(
-        self, key: str, value: io.FileIO
+        self, value: io.FileIO, *, file_name: str | None = None
     ) -> str: ...  # pragma: no cover
 
-    async def aput(self, key: str, value) -> str:
+    async def aput(self, value, *, file_name) -> str:
+        if file_name is None:
+            file_name = uuid.uuid4().hex
         if isinstance(value, bytes):
             value = io.BytesIO(value)
-        return await self._aput(key, value)
+        return await self._aput(value, file_name)
 
-    async def _aput(self, key: str, file_: io.FileIO) -> str:
-        files = {"file": (key, file_, "application/octet-stream")}
+    async def _aput(self, file_: io.FileIO, file_name: str) -> str:
+        files = {
+            "file": (file_name, file_, "application/octet-stream")
+        }
         response = await self._async_client.post("/add", files=files)
         response.raise_for_status()
         result = response.json()
@@ -92,21 +96,25 @@ class IPFSStorageClient(BaseStorageClient):
 
     @overload
     async def put(
-        self, key: str, value: bytes
+        self, value: bytes, *, file_name: str | None = None
     ) -> str: ...  # pragma: no cover
 
     @overload
     async def put(
-        self, key: str, value: io.FileIO
+        self, value: io.FileIO, *, file_name: str | None = None
     ) -> str: ...  # pragma: no cover
 
-    def put(self, key: str, value) -> str:
+    def put(self, value, *, file_name) -> str:
+        if file_name is None:
+            file_name = uuid.uuid4().hex
         if isinstance(value, bytes):
             value = io.BytesIO(value)
-        return self._put(key, value)
+        return self._put(value, file_name)
 
-    def _put(self, key: str, file_: io.FileIO) -> str:
-        files = {"file": (key, file_, "application/octet-stream")}
+    def _put(self, file_: io.FileIO, file_name: str) -> str:
+        files = {
+            "file": (file_name, file_, "application/octet-stream")
+        }
         response = self._client.post("/add", files=files)
         response.raise_for_status()
         result = response.json()

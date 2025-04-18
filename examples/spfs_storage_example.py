@@ -2,7 +2,7 @@ import io
 import os
 import asyncio
 
-from swarms_tools.storage.ipfs import IPFSStorageClient
+from swarms_tools.storage.spfs import SpfsStorageClient
 
 
 def _generate_in_memory_file(size_in_mb: int) -> io.BytesIO:
@@ -13,23 +13,23 @@ def _generate_in_memory_file(size_in_mb: int) -> io.BytesIO:
 
 def base_example():
     print("ipfs storage sync base example")
-    client = IPFSStorageClient(timeout=None)
+    client = SpfsStorageClient(timeout=None)
 
-    key = "hello"
+    file_name = "hello"
     value = b"world"
 
-    cid = client.put(key, value)
+    cid = client.put(value, file_name=file_name)
     print("Got cid:", cid)
-    value_from_ipfs = client.get(key=cid)
+    value_from_ipfs = client.get(cid)
 
     assert value == value_from_ipfs
     print("Value match")
 
     # or through contextmanager
-    with IPFSStorageClient(timeout=None) as client:
-        cid = client.put(key, value)
+    with SpfsStorageClient(timeout=None) as client:
+        cid = client.put(value, file_name=file_name)
         print("Got cid:", cid)
-        value_from_ipfs = client.get(key=cid)
+        value_from_ipfs = client.get(cid)
 
         assert value == value_from_ipfs
         print("Value match")
@@ -38,14 +38,14 @@ def base_example():
 
 async def base_async_example():
     print("ipfs storage async base example")
-    client = IPFSStorageClient(timeout=None)
+    client = SpfsStorageClient(timeout=None)
 
-    key = "ahello"
+    file_name = "ahello"
     value = b"aworld"
 
-    cid = await client.aput(key, value)
+    cid = await client.aput(value, file_name=file_name)
     print("Got cid:", cid)
-    value_from_ipfs = await client.aget(key=cid)
+    value_from_ipfs = await client.aget(cid)
 
     assert value == value_from_ipfs
     print("Value match")
@@ -53,10 +53,10 @@ async def base_async_example():
     await client.close()
 
     # or through contextmanager
-    with IPFSStorageClient(timeout=None) as client:
-        cid = await client.aput(key, value)
+    with SpfsStorageClient(timeout=None) as client:
+        cid = await client.aput(value, file_name=file_name)
         print("Got cid:", cid)
-        value_from_ipfs = await client.aget(key=cid)
+        value_from_ipfs = await client.aget(cid)
 
         assert value == value_from_ipfs
         print("Value match")
@@ -65,14 +65,14 @@ async def base_async_example():
 
 async def example_with_big_file():
     print("ipfs storage async big file example")
-    client = IPFSStorageClient(timeout=None)
+    client = SpfsStorageClient(timeout=None)
 
-    key = "bigfile"
+    file_name = "bigfile"
     file_ = _generate_in_memory_file(100)
 
-    cid = await client.aput(key, file_)
+    cid = await client.aput(file_, file_name=file_name)
     print("Got cid from big:", cid)
-    value_from_ipfs = await client.aget(key=cid)
+    value_from_ipfs = await client.aget(cid)
 
     original = file_.getvalue()
     retrieved = value_from_ipfs
